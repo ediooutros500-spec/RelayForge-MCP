@@ -56,7 +56,6 @@ async function main() {
         return json(res, 200, {
           ok: true,
           protocol: 'mcp-streamable-http',
-          supabase: false,
           host: HOST,
           port: PORT
         });

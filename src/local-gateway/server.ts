@@ -118,7 +118,6 @@ async function handler(req: IncomingMessage, res: ServerResponse) {
       return json(res, 200, {
         ok: true,
         mode: 'local',
-        supabase: false,
         host: HOST,
         port: PORT,
         mcpConnected: Boolean(client)
@@ -178,7 +177,6 @@ async function main() {
   const server = http.createServer((req, res) => void handler(req, res));
   server.listen(PORT, HOST, () => {
     console.log(`[local-gateway] http://${HOST}:${PORT}`);
-    console.log('[local-gateway] Supabase: disabled');
     console.log(`[local-gateway] auth token: ${TOKEN ? 'enabled' : 'disabled (localhost only)'}`);
   });
 

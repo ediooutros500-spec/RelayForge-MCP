@@ -224,7 +224,7 @@ RelayForge MCP server
    +-- configuration / history
 ```
 
-The default RelayForge HTTP path does not require Supabase. The upstream repository contains legacy remote-device code that can use Supabase, but RelayForge's default `start:http` flow does not initialize that transport.
+RelayForge currently contains no Supabase transport or Supabase runtime dependency. Remote access is provided through standard MCP Streamable HTTP plus whichever HTTPS reverse proxy or tunnel you choose. A separate authenticated relay layer can be added later without changing the MCP tool layer.
 
 ## Building from source
 

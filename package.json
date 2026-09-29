@@ -27,16 +27,12 @@
     "start-relayforge.sh"
   ],
   "scripts": {
-    "postinstall": "node dist/track-installation.js && node dist/npm-scripts/verify-ripgrep.js || node -e \"process.exit(0)\"",
     "open-chat": "open -n /Applications/Claude.app",
-    "device:install": "cd src/remote-device && npm install",
-    "device:start": "tsx src/remote-device/device.ts",
-    "device:start:dev": "nodemon --watch src/remote-device --exec tsx src/remote-device/device.ts",
     "sync-version": "node scripts/sync-version.js",
     "bump": "node scripts/sync-version.js --bump",
     "bump:minor": "node scripts/sync-version.js --bump --minor",
     "bump:major": "node scripts/sync-version.js --bump --major",
-    "build": "tsc && shx cp setup-claude-server.js uninstall-claude-server.js track-installation.js dist/ && shx chmod +x dist/*.js && shx mkdir -p dist/data && shx cp src/data/onboarding-prompts.json dist/data/ && shx mkdir -p dist/remote-device/scripts && shx cp src/remote-device/scripts/blocking-offline-update.js dist/remote-device/scripts/ && node scripts/build-ui-runtime.cjs",
+    "build": "tsc && shx cp setup-claude-server.js uninstall-claude-server.js dist/ && shx chmod +x dist/*.js && shx mkdir -p dist/data && shx cp src/data/onboarding-prompts.json dist/data/ && node scripts/build-ui-runtime.cjs",
     "watch": "tsc --watch",
     "start": "node dist/index.js",
     "start:debug": "node --inspect-brk=9229 dist/index.js",
@@ -86,7 +82,6 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.9.0",
     "@opendocsg/pdf2md": "^0.2.2",
-    "@supabase/supabase-js": "^2.89.0",
     "@tiptap/core": "^3.22.3",
     "@tiptap/extension-image": "^3.22.3",
     "@tiptap/extension-table": "^3.22.4",

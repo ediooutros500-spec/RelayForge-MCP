@@ -12,7 +12,6 @@ import { runSetup } from './npm-scripts/setup.js';
 import { runUninstall } from './npm-scripts/uninstall.js';
 import { capture } from './utils/capture.js';
 import { logToStderr, logger } from './utils/logger.js';
-import { runRemote } from './npm-scripts/remote.js';
 import { ensureChromeAvailable } from './tools/pdf/markdown.js';
 
 // Store messages to defer until after initialization
@@ -32,12 +31,6 @@ async function runServer() {
     // Check if first argument is "remove"
     if (process.argv[2] === 'remove') {
       await runUninstall();
-      return;
-    }
-
-    // Check if first argument is "remote"
-    if (process.argv[2] === 'remote') {
-      await runRemote();
       return;
     }
 
