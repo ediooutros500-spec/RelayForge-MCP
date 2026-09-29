@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "relayforge": {
+      "command": "node",
+      "args": ["dist/index.js"],
+      "env": {
+        "RELAYFORGE_OFFLINE_MODE": "1",
+        "RELAYFORGE_DISABLE_TELEMETRY": "1"
+      }
+    }
+  }
+}
