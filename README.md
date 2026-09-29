@@ -4,7 +4,6 @@ RelayForge MCP is a portable Model Context Protocol (MCP) server that gives comp
 
 It supports **MCP Streamable HTTP**, so it can be connected to web-based AI clients that accept a remote MCP URL, as well as local MCP clients.
 
-> RelayForge MCP is based on the MIT-licensed Desktop Commander project. See [Attribution](#attribution).
 
 ## What it provides
 
@@ -265,21 +264,3 @@ This repository intentionally excludes:
 - local device/session files
 
 Use `.env.example` only as a template.
-
-## Attribution
-
-RelayForge MCP is a derivative of **Desktop Commander MCP**, originally authored by Eduard Ruzga and contributors.
-
-The upstream code is distributed under the MIT License. The original copyright and license notice are preserved in [LICENSE](LICENSE).
-
-Upstream project:
-
-```text
-https://github.com/wonderwhy-er/DesktopCommanderMCP
-```
-
-RelayForge's additions include the standalone Streamable HTTP transport, isolated local configuration, offline launch mode, generic web-MCP launchers, and fixed-URL tunnel configuration.
-
-## License
-
-MIT. See [LICENSE](LICENSE).
