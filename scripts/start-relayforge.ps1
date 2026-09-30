@@ -15,6 +15,31 @@ function Import-DotEnv([string]$Path) {
   }
 }
 
+function Get-CloudflaredPath {
+  $installed = Get-Command cloudflared -ErrorAction SilentlyContinue
+  if ($installed) { return $installed.Source }
+
+  $toolsDir = Join-Path $Root '.tools'
+  $portable = Join-Path $toolsDir 'cloudflared.exe'
+  if (Test-Path $portable) { return $portable }
+
+  Write-Host '[SETUP] cloudflared nao encontrado. Baixando versao portatil oficial...'
+  New-Item -ItemType Directory -Force -Path $toolsDir | Out-Null
+  $url = 'https://github.com/cloudflare/cloudflared/releases/latest/download/cloudflared-windows-amd64.exe'
+  & curl.exe -L --fail --silent --show-error $url -o $portable
+  if ($LASTEXITCODE -ne 0 -or !(Test-Path $portable)) {
+    throw 'Falha ao baixar cloudflared.'
+  }
+
+  $signature = Get-AuthenticodeSignature $portable
+  if ($signature.Status -ne 'Valid') {
+    Remove-Item $portable -Force -ErrorAction SilentlyContinue
+    throw "Assinatura do cloudflared invalida: $($signature.Status)"
+  }
+  Write-Host '[SETUP] cloudflared instalado em .tools\cloudflared.exe'
+  return $portable
+}
+
 Import-DotEnv (Join-Path $Root '.env')
 
 $env:RELAYFORGE_CONFIG_DIR = if ($env:RELAYFORGE_CONFIG_DIR) { $env:RELAYFORGE_CONFIG_DIR } else { Join-Path $Root '.relayforge-data' }
@@ -28,7 +53,9 @@ $env:RELAYFORGE_PUBLIC_READONLY = if ($env:RELAYFORGE_PUBLIC_READONLY) { $env:RE
 if (!(Test-Path 'node_modules')) {
   Write-Host '[SETUP] Instalando dependencias...'
   npm ci
+  if ($LASTEXITCODE -ne 0) { throw 'npm ci falhou.' }
 }
+
 Write-Host '[BUILD] Compilando RelayForge MCP...'
 npm run build
 if ($LASTEXITCODE -ne 0) { throw 'Build falhou.' }
@@ -43,33 +70,41 @@ Write-Host '[MCP] Streamable HTTP'
 Write-Host "[READ ONLY] $($env:RELAYFORGE_PUBLIC_READONLY)"
 Write-Host ''
 
-$server = Start-Process -FilePath (Get-Command node).Source -ArgumentList @('dist/http-mcp/server.js') -WorkingDirectory $Root -PassThru -NoNewWindow
-Start-Sleep -Seconds 2
-if ($server.HasExited) { throw "Servidor MCP encerrou com codigo $($server.ExitCode)." }
-
+$server = $null
 $tunnel = $null
-if ($env:CLOUDFLARE_TUNNEL_TOKEN) {
-  $cloudflared = Get-Command cloudflared -ErrorAction SilentlyContinue
-  if (!$cloudflared) { throw 'cloudflared nao encontrado no PATH. Instale-o para usar o tunnel fixo.' }
-  Write-Host '[TUNNEL] Iniciando Cloudflare Named Tunnel...'
-  $tunnel = Start-Process -FilePath $cloudflared.Source -ArgumentList @('tunnel','run','--token',$env:CLOUDFLARE_TUNNEL_TOKEN) -WorkingDirectory $Root -PassThru -NoNewWindow
-  if ($env:RELAYFORGE_PUBLIC_URL) {
-    Write-Host ''
-    Write-Host '============================================' -ForegroundColor Green
-    Write-Host ' URL MCP PUBLICA FIXA' -ForegroundColor Green
-    Write-Host '============================================' -ForegroundColor Green
-    Write-Host $env:RELAYFORGE_PUBLIC_URL -ForegroundColor Cyan
-    Write-Host '============================================' -ForegroundColor Green
-  } else {
-    Write-Host '[AVISO] Tunnel iniciado, mas RELAYFORGE_PUBLIC_URL nao foi definido no .env.'
-  }
-} else {
-  Write-Host '[TUNNEL] Desativado. Defina CLOUDFLARE_TUNNEL_TOKEN no .env para URL publica fixa.'
-}
+try {
+  $server = Start-Process -FilePath (Get-Command node).Source -ArgumentList @('dist/http-mcp/server.js') -WorkingDirectory $Root -PassThru -NoNewWindow
+  Start-Sleep -Seconds 2
+  if ($server.HasExited) { throw "Servidor MCP encerrou com codigo $($server.ExitCode)." }
 
-Write-Host ''
-Write-Host 'Mantenha esta janela aberta.'
-Write-Host 'Pressione ENTER para encerrar.'
-[void](Read-Host)
-if ($tunnel -and !$tunnel.HasExited) { Stop-Process -Id $tunnel.Id -Force -ErrorAction SilentlyContinue }
-if (!$server.HasExited) { Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue }
+  if ($env:CLOUDFLARE_TUNNEL_TOKEN) {
+    $cloudflaredPath = Get-CloudflaredPath
+    Write-Host "[TUNNEL] cloudflared: $cloudflaredPath"
+    Write-Host '[TUNNEL] Iniciando Cloudflare Named Tunnel...'
+    $tunnel = Start-Process -FilePath $cloudflaredPath -ArgumentList @('tunnel','run','--token',$env:CLOUDFLARE_TUNNEL_TOKEN) -WorkingDirectory $Root -PassThru -NoNewWindow
+    Start-Sleep -Seconds 3
+    if ($tunnel.HasExited) { throw "Cloudflare Tunnel encerrou com codigo $($tunnel.ExitCode)." }
+
+    if ($env:RELAYFORGE_PUBLIC_URL) {
+      Write-Host ''
+      Write-Host '============================================' -ForegroundColor Green
+      Write-Host ' URL MCP PUBLICA FIXA' -ForegroundColor Green
+      Write-Host '============================================' -ForegroundColor Green
+      Write-Host $env:RELAYFORGE_PUBLIC_URL -ForegroundColor Cyan
+      Write-Host '============================================' -ForegroundColor Green
+    } else {
+      Write-Host '[AVISO] Tunnel conectado, mas RELAYFORGE_PUBLIC_URL nao esta definido no .env.'
+    }
+  } else {
+    Write-Host '[TUNNEL] Desativado. Defina CLOUDFLARE_TUNNEL_TOKEN no .env para URL publica fixa.'
+  }
+
+  Write-Host ''
+  Write-Host 'Mantenha esta janela aberta.'
+  Write-Host 'Pressione ENTER para encerrar.'
+  [void](Read-Host)
+}
+finally {
+  if ($tunnel -and !$tunnel.HasExited) { Stop-Process -Id $tunnel.Id -Force -ErrorAction SilentlyContinue }
+  if ($server -and !$server.HasExited) { Stop-Process -Id $server.Id -Force -ErrorAction SilentlyContinue }
+}
