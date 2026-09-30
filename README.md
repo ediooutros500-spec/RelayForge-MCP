@@ -59,6 +59,8 @@ Or run:
 .\start-relayforge.bat
 ```
 
+On startup, the Windows launcher checks the repository for updates. If the local checkout is clean and a fast-forward update is available, it updates automatically before rebuilding and starting the MCP server. It also clears a stale RelayForge instance occupying the configured port and downloads a verified portable `cloudflared` binary when required.
+
 ### Linux / macOS
 
 ```bash
